@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): lista das aberturas ativas (desligamento).
+ */
 package com.pokeskies.skiescrates.managers
 
 import com.pokeskies.skiescrates.config.ConfigManager
@@ -32,6 +39,9 @@ object OpeningManager {
     fun addInstance(playerId: UUID, instance: OpeningInstance) {
         activeInstances[playerId] = instance
     }
+
+    /** Pokémania: aberturas em andamento (cópia). */
+    fun activeInstances(): List<OpeningInstance> = activeInstances.values.toList()
 
     fun getInstance(playerId: UUID): OpeningInstance? {
         return activeInstances[playerId]

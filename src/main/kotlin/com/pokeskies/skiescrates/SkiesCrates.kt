@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): liga a parte da Pokémania (pacote mania): config, eventos, tick e /caixas.
+ */
 package com.pokeskies.skiescrates
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder
@@ -17,6 +24,9 @@ import com.pokeskies.skiescrates.data.rewards.options.int.IntOption
 import com.pokeskies.skiescrates.economy.EconomyManager
 import com.pokeskies.skiescrates.gui.InventoryType
 import com.pokeskies.skiescrates.integrations.ModIntegration
+import com.pokeskies.skiescrates.mania.CaixasCommand
+import com.pokeskies.skiescrates.mania.Mania
+import com.pokeskies.skiescrates.mania.WorldFx
 import com.pokeskies.skiescrates.managers.CratesManager
 import com.pokeskies.skiescrates.managers.CratesManager.tick
 import com.pokeskies.skiescrates.managers.HologramsManager
@@ -115,6 +125,7 @@ class SkiesCrates : ModInitializer {
 
         this.configDir = File(FabricLoader.getInstance().configDirectory, MOD_ID)
         ConfigManager.load()
+        Mania.load()
         this.storage = IStorage.load(ConfigManager.CONFIG.storage)
         Lang.init()
 
@@ -137,18 +148,23 @@ class SkiesCrates : ModInitializer {
             CratesManager.init()
             PlaceholderManager.init()
             ModIntegration.onServerStarted()
+            Mania.onServerStarted()
         })
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
             BaseCommand().register(dispatcher)
             KeysCommand().register(dispatcher)
+            CaixasCommand.register(dispatcher)
         }
         ServerLifecycleEvents.SERVER_STOPPING.register(ServerLifecycleEvents.ServerStopping { _: MinecraftServer ->
+            Mania.onStopping() // entrega as aberturas em andamento antes de fechar o banco
             this.storage.close()
             ModIntegration.onServerShutdown()
         })
         ServerTickEvents.END_SERVER_TICK.register(ServerTickEvents.EndTick { server ->
             tick()
             OpeningManager.tick()
+            Mania.tick()
+            WorldFx.tick()
 
             if (server.tickCount % 6000 == 0) {
                 KeyManager.cleanCache()
@@ -160,6 +176,7 @@ class SkiesCrates : ModInitializer {
         this.storage.close()
 
         ConfigManager.load()
+        Mania.load()
         this.storage = IStorage.load(ConfigManager.CONFIG.storage)
         Lang.init()
 

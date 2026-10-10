@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): entrega ao sair do servidor (antes o prêmio se perdia).
+ */
 package com.pokeskies.skiescrates.gui
 
 import com.pokeskies.skiescrates.SkiesCrates
@@ -121,6 +128,18 @@ class CrateInventory(
 
     fun updateRewardSlot(slot: Int, reward: Reward) {
         this.setSlot(slot, cachedRewardStacks[reward.id] ?: reward.getDisplayItem(player, reward.getPlaceholders(userData, crate)))
+    }
+
+    /** Pokémania: entrega o que falta (o jogador saiu do servidor no meio da animação). */
+    fun forceFinish() {
+        if (!isFinished) {
+            isFinished = true
+            rewardSpinners.forEach { (_, data) ->
+                data.giveRewards(player, crate)
+            }
+            SkiesCrates.INSTANCE.storage.saveUser(userData)
+        }
+        opening.stop()
     }
 
     override fun onClose() {

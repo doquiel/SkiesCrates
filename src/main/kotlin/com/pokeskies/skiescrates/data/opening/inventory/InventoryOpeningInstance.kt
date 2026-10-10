@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): entrega ao sair do servidor.
+ */
 package com.pokeskies.skiescrates.data.opening.inventory
 
 import com.pokeskies.skiescrates.data.Crate
@@ -21,5 +28,10 @@ class InventoryOpeningInstance(
 
     override fun tick() {
         gui.tick()
+    }
+
+    /** Pokémania: o jogador saiu no meio da animação antiga: entrega na hora. */
+    fun forceFinish() {
+        gui.forceFinish()
     }
 }

@@ -1,6 +1,14 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): campos opcionais da abertura nova.
+ */
 package com.pokeskies.skiescrates.data
 
 import com.google.gson.annotations.JsonAdapter
+import com.pokeskies.skiescrates.utils.FlexibleListAdaptorFactory
 import com.google.gson.annotations.SerializedName
 import com.pokeskies.skiescrates.config.ConfigManager
 import com.pokeskies.skiescrates.config.CostOptions
@@ -31,6 +39,35 @@ class Crate(
 ) {
     // Local variable that is filled in when creating the object
     lateinit var id: String
+
+    // ---- Pokémania: campos opcionais (sem eles, vale o padrão do mania.json) ----
+
+    /** Abertura: "roleta", "cartas" ou "classica" (usa o `animation` antigo). null = `abertura.padrao` do mania.json. */
+    @SerializedName("opening", alternate = ["abertura"])
+    var opening: String? = null
+
+    /** Raridade das recompensas sem `rarity` (ex: "lendario" numa caixa só de lendários). null = deduzir pelo weight. */
+    var rarity: String? = null
+
+    /** Texto do botão "Onde conseguir chave" no preview. null = `preview.ondeConseguir` do mania.json. */
+    @SerializedName("keys_info", alternate = ["onde_conseguir"])
+    @JsonAdapter(FlexibleListAdaptorFactory::class)
+    var keysInfo: List<String>? = null
+
+    /** Link aberto pelo botão "Onde conseguir chave". null = `preview.link` do mania.json. */
+    @SerializedName("keys_link")
+    var keysLink: String? = null
+
+    /** Abrir várias de uma vez (0 desliga). null = `abertura.multiplas` do mania.json. */
+    @SerializedName("multi_open")
+    var multiOpen: Int? = null
+
+    /** Anúncio na rede: false desliga nesta caixa. null = `anuncio.ativo` do mania.json. */
+    var announce: Boolean? = null
+
+    /** Preview novo: false volta ao preview antigo (`preview`). null = `preview.todas` do mania.json. */
+    @SerializedName("new_preview")
+    var newPreview: Boolean? = null
 
     fun parsePlaceholders(string: String): String {
         return string.replace("%crate_name%", name)

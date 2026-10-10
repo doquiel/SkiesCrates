@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): opções do Pokémon visíveis (preview em 3D).
+ */
 package com.pokeskies.skiescrates.data.rewards.types
 
 import com.cobblemon.mod.common.Cobblemon
@@ -36,7 +43,7 @@ class PokemonReward(
     weight: Int = 1,
     limits: RewardLimits? = null,
     broadcast: Boolean = false,
-    private val pokemon: PokemonRewardOptions = PokemonRewardOptions(),
+    val pokemon: PokemonRewardOptions = PokemonRewardOptions(),
 ) : Reward(RewardType.POKEMON, name, display, weight, limits, broadcast) {
     companion object {
         private val DEFAULT_DISPLAY = GenericItem("cobblemon:poke_ball", name = "Pokemon Reward")

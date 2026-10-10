@@ -3,10 +3,14 @@
   "id": "skiescrates",
   "version": "${version}",
   "name": "SkiesCrates",
-  "description": "Crates Mod",
+  "description": "Crates Mod (fork da Pokémania: roleta, cartas, abrir várias, preview com chances, ManiaUI)",
   "authors": [
     "Stampede"
   ],
+  "contributors": [
+    "Pokémania"
+  ],
+  "license": "MPL-2.0",
   "entrypoints": {
     "main": [
       "com.pokeskies.skiescrates.SkiesCrates"
@@ -15,6 +19,10 @@
   "depends": {
     "fabricloader": ">=0.16.0",
     "minecraft": ">=1.21.1"
+  },
+  "suggests": {
+    "maniaui": ">=0.4.0",
+    "connect": "*"
   },
   "mixins": ["skiescrates.mixins.json"],
   "accessWidener": "skiescrates.accesswidener"

@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): abrir várias, pular animação, trava por jogador,
+ * diário dos prêmios e a abertura/preview novos (pacote mania).
+ */
 package com.pokeskies.skiescrates.managers
 
 import com.pokeskies.skiescrates.SkiesCrates
@@ -17,6 +25,11 @@ import com.pokeskies.skiescrates.economy.EconomyManager
 import com.pokeskies.skiescrates.events.ItemSwingEvent
 import com.pokeskies.skiescrates.gui.PreviewInventory
 import com.pokeskies.skiescrates.integrations.bil.BILCrateData
+import com.pokeskies.skiescrates.mania.Actions
+import com.pokeskies.skiescrates.mania.Journal
+import com.pokeskies.skiescrates.mania.Mania
+import com.pokeskies.skiescrates.mania.ManiaOpening
+import com.pokeskies.skiescrates.mania.OpeningStyle
 import com.pokeskies.skiescrates.utils.ChunkKey
 import com.pokeskies.skiescrates.utils.MinecraftDispatcher
 import com.pokeskies.skiescrates.utils.TextUtils
@@ -112,8 +125,10 @@ object CratesManager {
                 blockHitResult.blockPos.z
             )
             getCrateFromPos(blockPos)?.let { instance ->
+                // Pokémania: shift + clique direito abre sem animação
+                val skip = player.isShiftKeyDown && Mania.config.abertura.pularComShift
                 asyncScope.launch {
-                    openCrate(player, instance.crate, CrateOpenData(blockPos, null), false)
+                    openCrate(player, instance.crate, CrateOpenData(blockPos, null), false, 1, skip)
                 }
                 return@UseBlockCallback InteractionResult.FAIL
             }
@@ -258,11 +273,23 @@ object CratesManager {
     }
 
     // This method is massive, but it handles a lot of things!
-    suspend fun openCrate(player: ServerPlayer, crate: Crate, openData: CrateOpenData, isForced: Boolean): Boolean {
+    suspend fun openCrate(player: ServerPlayer, crate: Crate, openData: CrateOpenData, isForced: Boolean): Boolean =
+        openCrate(player, crate, openData, isForced, 1, false, false)
+
+    /**
+     * Pokémania: [count] = quantas abrir de uma vez (limitado pelas chaves e pelo saldo; só na abertura nova),
+     * [skip] = sem animação, [fromMenu] = clique num menu (o menu já tem o próprio anti-spam).
+     */
+    suspend fun openCrate(
+        player: ServerPlayer, crate: Crate, openData: CrateOpenData, isForced: Boolean,
+        count: Int, skip: Boolean = false, fromMenu: Boolean = false
+    ): Boolean {
         // TODO: Check crate validity
-        interactionLimiter[player.uuid]?.let {
-            if ((it + ConfigManager.CONFIG.interactionLimiter) > System.currentTimeMillis())
-                return false
+        if (!fromMenu) {
+            interactionLimiter[player.uuid]?.let {
+                if ((it + ConfigManager.CONFIG.interactionLimiter) > System.currentTimeMillis())
+                    return false
+            }
         }
 
         interactionLimiter[player.uuid] = System.currentTimeMillis()
@@ -323,9 +350,47 @@ object CratesManager {
             }
         }
 
+        // Pokémania: abertura nova (null = a animação antiga do SkiesCrates)
+        val maniaStyle: OpeningStyle? = Mania.openingStyle(crate)
+        val requested = if (maniaStyle == null || openData.itemStack != null) 1 else count.coerceIn(1, 64)
+
+        // Pokémania: da leitura dos dados até a gravação, ninguém mais mexe nos dados deste jogador (a mesma fila dos
+        // comandos de chave). Antes, uma chave dada no meio podia ser apagada por esta gravação.
+        return Journal.withUserLock(player.uuid) {
+            openCrateLocked(player, crate, openData, isForced, requested, skip, maniaStyle)
+        }
+    }
+
+    private suspend fun openCrateLocked(
+        player: ServerPlayer, crate: Crate, openData: CrateOpenData, isForced: Boolean,
+        requested: Int, skip: Boolean, maniaStyle: OpeningStyle?
+    ): Boolean {
         val storage = SkiesCrates.INSTANCE.storage
 
         val playerData = storage.getUser(player.uuid)
+
+        // Pokémania: quantas dá para abrir agora (chaves e saldo, com os dados frescos)
+        var amount = requested
+        if (amount > 1 && !isForced) {
+            amount = minOf(amount, withContext(MinecraftDispatcher(player.server)) {
+                var max = amount
+                for ((keyId, need) in crate.keys) {
+                    val key = ConfigManager.KEYS[keyId] ?: continue
+                    if (need <= 0) continue
+                    val have = if (key.virtual) playerData.keys[keyId] ?: 0
+                        else player.inventory.items.filter { !it.isEmpty && KeyManager.getKeyOrNull(it)?.id == keyId }.sumOf { it.count }
+                    max = minOf(max, have / need)
+                }
+                max
+            })
+            if (crate.cost != null && crate.cost.amount > 0) {
+                EconomyManager.getService(crate.cost.provider)?.let { service ->
+                    val canPay = (service.balance(player, crate.cost.currency) / crate.cost.amount).toInt()
+                    amount = minOf(amount, canPay)
+                }
+            }
+            amount = amount.coerceAtLeast(1) // com 0, as checagens abaixo dão a mensagem de sempre
+        }
 
         // Check for a cooldown, if one is present
         if (crate.cooldown > 0) {
@@ -360,7 +425,7 @@ object CratesManager {
         // Check for any keys needed
         if (!isForced && crate.keys.isNotEmpty()) {
             if(!withContext(MinecraftDispatcher(player.server)) {
-                if (!crate.keys.all { (keyId, amount) ->
+                if (!crate.keys.all { (keyId, needed) ->
                     val key = ConfigManager.KEYS[keyId] ?: run {
                         Utils.printError("Key $keyId does not exist while opening crate ${crate.id} for ${player.name.string}!")
                         Lang.ERROR_KEY_NOT_FOUND.forEach {
@@ -375,7 +440,7 @@ object CratesManager {
                         return@all false
                     }
 
-                    KeyManager.checkPlayerForKeys(player, playerData, key, amount)
+                    KeyManager.checkPlayerForKeys(player, playerData, key, needed * amount)
                 }) {
                     handleCrateFail(player, crate, openData)
                     Lang.ERROR_MISSING_KEYS.forEach {
@@ -406,6 +471,19 @@ object CratesManager {
             if (!contains) return false
         }
 
+        // Pokémania: sorteia antes de cobrar; o sorteio entra no diário junto com a retirada das chaves
+        val fillerBag = crate.generateRewardBag(playerData)
+        val draws = if (maniaStyle != null) Journal.draw(crate, playerData, amount) else null
+        if (draws != null && draws.isEmpty()) {
+            withContext(MinecraftDispatcher(player.server)) {
+                handleCrateFail(player, crate, openData)
+                Lang.ERROR_NO_REWARDS.forEach {
+                    player.sendMessage(TextUtils.parseAllNative(player, crate.parsePlaceholders(it)))
+                }
+            }
+            return false
+        }
+
         // Take cost of opening the crate
         if (!isForced) {
             // Remove balance if needed
@@ -422,7 +500,7 @@ object CratesManager {
                     }
                     return false
                 }
-                if (!service.withdraw(player, crate.cost.amount, crate.cost.currency)) {
+                if (!service.withdraw(player, crate.cost.amount * amount, crate.cost.currency)) {
                     withContext(MinecraftDispatcher(player.server)) {
                         handleCrateFail(player, crate, openData)
                         Lang.ERROR_BALANCE_CHANGED.forEach {
@@ -448,7 +526,8 @@ object CratesManager {
             if (crate.keys.isNotEmpty()) {
                 // TODO: I dont like this code very much, but need to figure out a better way
                 if (!withContext(MinecraftDispatcher(player.server)) {
-                    for ((keyId, amount) in crate.keys) {
+                    for ((keyId, perOpen) in crate.keys) {
+                        val amount = perOpen * amount // Pokémania: abrir várias
                         var removed = 0
                         val key = ConfigManager.KEYS[keyId] ?: run {
                             Utils.printError("Key $keyId does not exist while opening crate ${crate.id} for ${player.name.string}!")
@@ -514,7 +593,7 @@ object CratesManager {
             }
         }
 
-        playerData.addCrateUse(crate)
+        repeat(amount) { playerData.addCrateUse(crate) }
 
         return withContext(MinecraftDispatcher(player.server)) {
             if (!storage.saveUserAsync(playerData).get()) {
@@ -523,6 +602,15 @@ object CratesManager {
                     player.sendMessage(TextUtils.toNative(it))
                 }
                 return@withContext false
+            }
+
+            if (draws != null && maniaStyle != null) {
+                // Pokémania: abertura nova (os prêmios já estão no diário)
+                val skipNow = skip || playerData.prefersSkip()
+                val opening = ManiaOpening(player, crate, draws, maniaStyle, skipNow, openData.location, fillerBag)
+                OpeningManager.addInstance(player.uuid, opening)
+                opening.setup()
+                return@withContext true
             }
 
             Lang.CRATE_OPENING.forEach {
@@ -626,6 +714,12 @@ object CratesManager {
         }
 
         interactionLimiter[player.uuid] = System.currentTimeMillis()
+
+        // Pokémania: preview novo (chance real, raridades, abrir/abrir várias)
+        if (Mania.usesNewPreview(crate)) {
+            Actions.preview(player, crate)
+            return
+        }
 
         val preview = ConfigManager.PREVIEW[crate.preview] ?: run {
             Lang.ERROR_INVALID_PREVIEW.forEach {

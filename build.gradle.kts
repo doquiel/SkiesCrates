@@ -86,10 +86,11 @@ dependencies {
     })
 
     // PermissionsAPI
-    modImplementation("me.lucko:fabric-permissions-api:0.3.1")
+    modImplementation(include("me.lucko:fabric-permissions-api:0.3.1")!!)
 
     // GUI libraries
-    modImplementation("eu.pb4:sgui:1.6.1+1.21.1")
+    // Pokémania: sgui e permissions-api dentro do jar (como o 1.0.5 oficial), para não depender de outro mod trazer
+    modImplementation(include("eu.pb4:sgui:1.6.1+1.21.1")!!)
 
     // Events
     modImplementation("xyz.nucleoid:stimuli:0.4.12+1.21")?.let {

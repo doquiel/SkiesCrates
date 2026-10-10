@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): diário de prêmios pendentes e preferência de
+ * animação.
+ */
 package com.pokeskies.skiescrates.data.userdata;
 
 import com.pokeskies.skiescrates.data.Crate;
@@ -6,7 +14,9 @@ import com.pokeskies.skiescrates.data.rewards.Reward;
 import org.bson.codecs.pojo.annotations.BsonProperty;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,6 +27,22 @@ public class UserData {
     public HashMap<String, CrateData> crates;
     @BsonProperty
     public HashMap<String, Integer> keys;
+    // Pokémania: prêmios sorteados e ainda não entregues (ver PendingRewardData). Documentos antigos vêm sem.
+    @BsonProperty
+    public List<PendingRewardData> pending;
+    // Pokémania: true = sempre pular a animação de abertura (/caixas animacao rapida). null = padrão (com animação).
+    @BsonProperty
+    public Boolean skipAnimation;
+
+    // Sem prefixo get/is de propósito: o codec POJO do Mongo trataria como propriedade e gravaria no documento.
+    public List<PendingRewardData> pendingList() {
+        if (pending == null) pending = new ArrayList<>();
+        return pending;
+    }
+
+    public boolean prefersSkip() {
+        return skipAnimation != null && skipAnimation;
+    }
 
     public UserData(UUID uuid) {
         this.uuid = uuid;

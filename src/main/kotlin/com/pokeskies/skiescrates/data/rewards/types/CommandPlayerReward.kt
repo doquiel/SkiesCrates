@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): pula os comandos de anúncio na abertura nova.
+ */
 package com.pokeskies.skiescrates.data.rewards.types
 
 import com.google.gson.annotations.JsonAdapter
@@ -20,7 +27,7 @@ class CommandPlayerReward(
     limits: RewardLimits? = null,
     broadcast: Boolean = false,
     @JsonAdapter(FlexibleListAdaptorFactory::class) @SerializedName("commands",  alternate = ["command"])
-    private val commands: List<String> = emptyList(),
+    val commands: List<String> = emptyList(),
     @SerializedName("permission_level")
     private val permissionLevel: Int? = null
 ) : Reward(RewardType.COMMAND_PLAYER, name, display, weight, limits, broadcast) {
@@ -36,6 +43,7 @@ class CommandPlayerReward(
         }
 
         for (command in parsedCommands) {
+            if (shouldSkipCommand(command)) continue // Pokémania
             SkiesCrates.INSTANCE.server.commands.performPrefixedCommand(
                 source,
                 command

@@ -1,3 +1,10 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Modificado pela Pokémania (fork pokemaniabrasil/SkiesCrates): campos rarity e description, entrega silenciosa.
+ */
 package com.pokeskies.skiescrates.data.rewards
 
 import com.google.gson.*
@@ -7,6 +14,8 @@ import com.pokeskies.skiescrates.config.item.GenericItem
 import com.pokeskies.skiescrates.data.Crate
 import com.pokeskies.skiescrates.data.userdata.CrateData
 import com.pokeskies.skiescrates.data.userdata.UserData
+import com.pokeskies.skiescrates.utils.FlexibleListAdaptorFactory
+import com.google.gson.annotations.JsonAdapter
 import com.pokeskies.skiescrates.utils.TextUtils
 import com.pokeskies.skiescrates.utils.Utils
 import net.minecraft.server.level.ServerPlayer
@@ -25,8 +34,19 @@ abstract class Reward(
 ) {
     lateinit var id: String
 
+    // Pokémania: raridade opcional ("comum", "incomum", "raro", "epico", "lendario", "mitico"). Sem ela, a raridade
+    // é deduzida pelo weight relativo dentro da caixa (ver mania/Rarities.kt).
+    var rarity: String? = null
+
+    // Pokémania: linhas extras do preview ("o que vem de fato"). Sem elas, o preview deduz pelos comandos.
+    @JsonAdapter(FlexibleListAdaptorFactory::class)
+    var description: List<String>? = null
+
     open fun giveReward(player: ServerPlayer, crate: Crate) {
         Utils.printDebug("Attempting to execute a ${type.identifier} reward: $this")
+
+        // Pokémania: a abertura nova manda a própria mensagem e o próprio anúncio
+        if (deliveryQuiet) return
 
         Lang.CRATE_REWARD.forEach {
             player.sendMessage(TextUtils.parseAllNative(
@@ -95,6 +115,23 @@ abstract class Reward(
 
     private fun calculatePercent(reward: Reward, crate: Crate): Double {
         return (reward.weight.toDouble() / crate.rewards.values.sumOf { it.weight }) * 100
+    }
+
+    companion object {
+        /** Pokémania: true só durante a entrega da abertura nova (thread do servidor). */
+        @JvmStatic
+        var deliveryQuiet: Boolean = false
+
+        /** Pokémania: comandos que começam com estes prefixos são pulados na entrega (ex: "announce "). */
+        @JvmStatic
+        var skipCommandPrefixes: List<String> = emptyList()
+
+        @JvmStatic
+        fun shouldSkipCommand(command: String): Boolean {
+            if (skipCommandPrefixes.isEmpty()) return false
+            val clean = command.trimStart().removePrefix("/")
+            return skipCommandPrefixes.any { clean.startsWith(it, ignoreCase = true) }
+        }
     }
 
     override fun toString(): String {
