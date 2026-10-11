@@ -79,7 +79,7 @@ object Announcer {
     /** O nome do prêmio na cor da raridade, com o item de verdade no hover. */
     private fun rewardComponent(player: ServerPlayer, crate: Crate, draw: Draw): Component {
         val name = TextUtils.toNative("<${draw.rarity.style.cor}>${Effects.rewardName(draw.reward)}</${draw.rarity.style.cor}>")
-        val stack = draw.reward.getDisplayItem(player)
+        val stack = RewardInfo.icon(player, draw.reward)
         val out = Component.empty().append(name)
         if (!stack.isEmpty) out.withStyle { it.withHoverEvent(HoverEvent(HoverEvent.Action.SHOW_ITEM, HoverEvent.ItemStackInfo(stack))) }
         return out

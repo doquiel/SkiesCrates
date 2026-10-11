@@ -110,8 +110,9 @@ receberem, falta um receptor no Pokélógio (classe `NetworkAnnounce`: `origin`,
 ## ManiaUI
 
 Soft-dependency (`suggests`), com a ponte `mania/ui/UiHook` sem imports do ManiaUI e guarda `LinkageError`, no padrão do
-`GladiadorApp`/`RankedApp`. Compilado contra o `libs/ManiaUI-fabric-1.21.1-0.4.1.jar` (só API pública; nenhuma
-assinatura do ManiaUI mudou). Menus: `skiescrates_preview`, `skiescrates_abertura` (remonta a cada 2 ticks durante a
+`GladiadorApp`/`RankedApp`. Compilado contra o `libs/ManiaUI-fabric-1.21.1-0.4.2.jar` (só API pública; nenhuma
+assinatura do ManiaUI mudou). O `itemModel` (0.4.2) fica isolado em `ItemModelCompat`: com ManiaUI mais
+antigo no servidor ou no cliente, os itens caem no tile de grade. Menus: `skiescrates_preview`, `skiescrates_abertura` (remonta a cada 2 ticks durante a
 animação), `skiescrates_caixas`; app `caixas` (ordem 40).
 
 ## Armazenamento

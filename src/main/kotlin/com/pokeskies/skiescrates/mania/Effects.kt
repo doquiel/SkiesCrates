@@ -80,7 +80,7 @@ object Effects {
         if (world.particulas) particles(level, origin, rarity)
         threshold(world.fogosAPartirDe)?.let { min -> if (rarity.atLeast(min)) firework(level, origin, rarity) }
         if (world.itemSubindo && crateInstance != null && crateInstance.level == level) {
-            WorldFx.risingItem(level, crateInstance.pos.center.add(0.0, 0.55, 0.0), best.reward.getDisplayItem(player), rarity)
+            WorldFx.risingItem(level, crateInstance.pos.center.add(0.0, 0.55, 0.0), RewardInfo.icon(player, best.reward), rarity)
         }
     }
 

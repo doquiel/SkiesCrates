@@ -23,7 +23,9 @@ Base: SkiesCrates 1.0.4 (commit `c610e73`). Todo config antigo continua funciona
 **Anúncio**: todos os prêmios, com mais destaque nos raros, para a rede pelo Synx Connect (`skiescrates/anuncio`);
 os comandos `announce`/`broadcast` dos prêmios são pulados na abertura nova (não duplica).
 
-**ManiaUI**: preview, abertura e lista com Pokémon em 3D; app "Caixas" no Pokélógio.
+**ManiaUI**: preview, abertura e lista com Pokémon em 3D; app "Caixas" no Pokélógio. Prêmios que são item aparecem
+no mesmo palco do Pokémon (`itemModel` do ManiaUI 0.4.2, parado e de frente), com a mesma altura; cliente até 0.4.1 vê
+o tile de grade, também com altura fixa. Item que não existe no servidor (mod faltando) vira papel em vez de casa vazia.
 
 **Segurança da entrega**
 - Diário (`pending`) gravado junto com a retirada das chaves; entrega no fim, ao fechar, ao sair, ao desligar; queda

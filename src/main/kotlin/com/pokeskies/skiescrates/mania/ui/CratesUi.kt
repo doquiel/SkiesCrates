@@ -92,21 +92,49 @@ internal object CratesUi {
     }
 
     /** Um prêmio: Pokémon em 3D (ou card com o item) + etiqueta da raridade. */
+    /** Servidor e cliente com o ManiaUI 0.4.2+ (o `itemModel`, item girando no mesmo palco do Pokémon 3D). */
+    private fun supportsItemModel(player: ServerPlayer): Boolean {
+        fun atLeast(v: String?): Boolean {
+            val n = v?.split('.', '-', '+')?.take(3)?.map { it.toIntOrNull() ?: 0 } ?: return false
+            val (a, b, c) = (n + listOf(0, 0, 0)).take(3)
+            return a > 0 || b > 4 || (b == 4 && c >= 2)
+        }
+        return try {
+            atLeast(ManiaUI.version) && atLeast(ManiaUI.clientVersion(player.uuid))
+        } catch (e: LinkageError) {
+            false
+        }
+    }
+
+    /** O item no palco 3D (mesma altura do Pokémon). false = não deu (ManiaUI antigo no servidor ou no cliente). */
+    private fun NodesBuilder.itemModelCell(
+        player: ServerPlayer, stack: net.minecraft.world.item.ItemStack, height: Int, name: Component,
+        tooltip: List<Component>, id: String?, onClick: UiHandler?
+    ): Boolean {
+        if (!supportsItemModel(player)) return false
+        return try {
+            ItemModelCompat.add(this, stack, height, name, tooltip, id, onClick)
+            true
+        } catch (e: LinkageError) {
+            false
+        }
+    }
+
     fun NodesBuilder.rewardCell(
         player: ServerPlayer, reward: Reward, rarity: Rarity, chance: Double?, height: Int,
         available: Boolean = true, chip: Boolean = true, id: String? = null, onClick: UiHandler? = null
     ) {
-        val stack = reward.getDisplayItem(player)
+        val stack = RewardInfo.icon(player, reward)
         val name = t(player, "<${rarity.style.cor}>${Effects.rewardName(reward)}")
         val tooltip = rewardTooltip(player, reward, rarity, chance, available)
         val ref = RewardInfo.pokemon(reward)
         stack {
             if (ref != null) {
                 pokemonModel(ref.species, ref.aspects, UiIcon.item(stack), height, name, 35f, tooltip, id, onClick)
-            } else {
-                // Item: "tile" de grade (ícone grande no centro + nome), como numa caixa de loot
-                val line = RewardInfo.highlight(reward)?.let { listOf(t(player, it)) } ?: emptyList()
-                grid(1) { item(name, UiIcon.item(stack), line, null, true, tooltip, null, id, onClick) }
+            } else if (!itemModelCell(player, stack, height, name, tooltip, id, onClick)) {
+                // Cliente sem o modelo 3D de itens: "tile" de grade, sempre com 2 linhas para todos terem a mesma altura
+                val line = RewardInfo.highlight(reward)?.let { t(player, it) } ?: Component.literal(" ")
+                grid(1) { item(name, UiIcon.item(stack), listOf(line), null, true, tooltip, null, id, onClick) }
             }
             // A "barra" da raridade embaixo do item (como nas caixas de loot), com a chance real
             if (chip) {
@@ -172,8 +200,9 @@ internal object CratesUi {
                         Actions.open(action.player, crate, 1)
                     }
                     if (multi > 1) {
-                        val n = minOf(multi, opens.coerceAtLeast(0))
-                        button(t(player, tx.abrirVarias, mapOf("%amount%" to "${n.coerceAtLeast(2)}")), UiStyle.PRIMARY, null,
+                        // Com 2+ aberturas possíveis mostra quantas abre; senão o máximo da caixa (botão desligado)
+                        val n = if (opens > 1) minOf(multi, opens) else multi
+                        button(t(player, tx.abrirVarias, mapOf("%amount%" to "$n")), UiStyle.PRIMARY, null,
                             near && opens > 1, emptyList(), null, "abrir_varias") { action ->
                             Actions.open(action.player, crate, multi)
                         }

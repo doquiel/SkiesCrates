@@ -179,6 +179,25 @@ object RewardInfo {
         return parts.takeIf { it.isNotEmpty() }?.joinToString(" <dark_gray>· ")
     }
 
+    /**
+     * Item que representa o prêmio nas telas. Se o item do config não existe neste servidor (mod faltando, id errado),
+     * o SkiesCrates devolve ar e a casa fica vazia: aqui vira um papel, e o erro vai para o log uma vez por prêmio.
+     */
+    fun icon(player: net.minecraft.server.level.ServerPlayer, reward: Reward): net.minecraft.world.item.ItemStack {
+        val stack = try {
+            reward.getDisplayItem(player, emptyMap())
+        } catch (e: Exception) {
+            net.minecraft.world.item.ItemStack.EMPTY
+        }
+        if (!stack.isEmpty) return stack
+        if (missing.add(reward)) {
+            com.pokeskies.skiescrates.utils.Utils.printError("Prêmio '${reward.id}': o item de exibição não existe neste servidor (mod faltando?). Mostrando papel.")
+        }
+        return net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.PAPER)
+    }
+
+    private val missing = java.util.Collections.newSetFromMap(java.util.WeakHashMap<Reward, Boolean>())
+
     /** "0,45%" com casas suficientes para não virar zero. */
     fun formatChance(p: Double): String {
         val pct = p * 100

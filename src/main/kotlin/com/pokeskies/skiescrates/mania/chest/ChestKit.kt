@@ -68,7 +68,7 @@ object ChestKit {
 
     /** Item do prêmio na roleta/cartas: nome na cor da raridade + raridade. */
     fun reelItem(player: ServerPlayer, crate: Crate, reward: Reward, rarity: Rarity, glint: Boolean = false): ItemStack {
-        val base = reward.getDisplayItem(player, emptyMap())
+        val base = RewardInfo.icon(player, reward)
         val name = "<${rarity.style.cor}>${Effects.rewardName(reward)}"
         return named(player, base.copyWithCount(1), name, listOf("<${rarity.style.cor}>■ ${rarity.style.nome}"), glint = glint)
     }
@@ -79,7 +79,7 @@ object ChestKit {
         extra: List<String> = emptyList(), glint: Boolean = false
     ): ItemStack {
         val t = Mania.config.textos
-        val base = reward.getDisplayItem(player, emptyMap())
+        val base = RewardInfo.icon(player, reward)
         val lore = mutableListOf<String>()
         // Estilo loot box: raridade + chance numa linha, e no máximo uma linha do que importa
         lore += "<${rarity.style.cor}>■ ${rarity.style.nome}" + if (chance != null) " <dark_gray>· <white>${RewardInfo.formatChance(chance)}" else ""
