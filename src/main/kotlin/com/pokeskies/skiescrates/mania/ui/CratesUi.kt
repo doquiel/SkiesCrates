@@ -164,7 +164,7 @@ internal object CratesUi {
             val (have, need) = Actions.keyStatus(crate, view.keys)
             val opens = Actions.opensWith(crate, view.keys)
             val subtitle = if (crate.keys.isEmpty()) t(player, tx.chancesTitulo)
-                else t(player, "<white>\uD83D\uDD11 $have" + (if (need > 1) " <gray>/ $need" else "") + " <gray>" + (if (have == 1) "chave" else "chaves"))
+                else t(player, "<white>$have" + (if (need > 1) " <gray>/ $need" else "") + " <gray>" + (if (have == 1) "chave" else "chaves"))
             return ctx.screen(t(player, "<white>${Mania.crateName(crate)}"), subtitle, UiIcon.item(crate.display.createItemStack(player)),
                 accent(), UiSize.LARGE) {
                 collection(ManiaUI.head(player), null, t(player, "<gray>Nenhum prêmio por aqui"), t(player, "<gray>Buscar prêmio")) {
