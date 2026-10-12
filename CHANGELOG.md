@@ -1,5 +1,15 @@
 # Changelog (fork da Pokémania)
 
+## 1.2.0-mania (2026-10-12) · vitrine de loot box
+
+- **Preview da caixa** e **lista de caixas** na vitrine em tela cheia do ManiaUI 0.5.0 (`collection`), no estilo do
+  Armário: prêmios em 3D (Pokémon do Cobblemon ou o item girando) em cartões com a cor da raridade e a chance real no
+  selo; o prêmio escolhido grande à esquerda (arraste para girar, rolagem para zoom); filtros por raridade com a chance
+  somada; busca; Abrir (sozinho, grande), Abrir xN e Onde conseguir chave embaixo da prévia. Na lista, cada caixa em 3D
+  com as chaves no selo e "Ver prêmios". Esgotado aparece como indisponível. Pouco texto: o detalhe fica na dica.
+- Precisa do **ManiaUI 0.5.0** no servidor; sem o cliente 0.5.0 o ManiaUI entrega a grade comum (ou o baú) com os
+  mesmos botões. A abertura (roleta, cartas, x10) continua como na 1.1.0.
+
 ## 1.1.0-mania (2026-10-10)
 
 Base: SkiesCrates 1.0.4 (commit `c610e73`). Todo config antigo continua funcionando sem mudança.

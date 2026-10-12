@@ -86,7 +86,8 @@ Criado sozinho com os padrões na primeira vez (fica fora do `config.json`, que 
 
 - **Clique esquerdo** no bloco: preview. **Clique direito** (com chave): abre com a animação da caixa.
   **Shift + clique direito**: abre sem animação.
-- No preview: **Abrir**, **Abrir xN** (até N, limitado pelas chaves), **Onde conseguir chave**, filtro por raridade.
+- No preview (vitrine em tela cheia, 1.2.0): prêmios em 3D com a chance no selo, filtro por raridade, busca; **Abrir**,
+  **Abrir xN** (até N, limitado pelas chaves) e **Onde conseguir chave** embaixo da prévia.
   Longe da caixa (mais de 8 blocos), os botões de abrir viram "Vá até a caixa".
 - Durante a animação: **shift + clique** (ou o botão) pula. Nas cartas, cada clique vira uma carta (a mais rara por
   último); "Revelar todas" vira o resto.

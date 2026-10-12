@@ -148,9 +148,13 @@ internal object CratesUi {
 
     object PreviewMenu : UiMenu {
         override val id = PREVIEW_ID
-        private const val PER_ROW = 5
-        private const val ROWS = 2
 
+        /**
+         * A vitrine da caixa (ManiaUI 0.5.0, `collection`): prêmios em 3D (Pokémon ou item girando) nos cartões, com a
+         * chance real no selo e a cor da raridade; filtro por raridade com a chance somada; o prêmio escolhido grande
+         * à esquerda; Abrir, Abrir xN e Onde conseguir chave embaixo da prévia. Sem o cliente 0.5.0, o ManiaUI entrega
+         * uma grade comum (ou o baú), com os mesmos botões.
+         */
         override fun build(ctx: UiContext): UiScreen {
             val player = ctx.player
             val st = previews[player.uuid] ?: return ctx.screen(t(player, "Caixas")) { text(t(player, "<gray>Carregando...")) }
@@ -160,59 +164,48 @@ internal object CratesUi {
             val (have, need) = Actions.keyStatus(crate, view.keys)
             val opens = Actions.opensWith(crate, view.keys)
             val subtitle = if (crate.keys.isEmpty()) t(player, tx.chancesTitulo)
-                else t(player, "<white>Chaves: $have" + if (need > 1) " <white>/ $need" else "")
+                else t(player, "<white>\uD83D\uDD11 $have" + (if (need > 1) " <gray>/ $need" else "") + " <gray>" + (if (have == 1) "chave" else "chaves"))
             return ctx.screen(t(player, "<white>${Mania.crateName(crate)}"), subtitle, UiIcon.item(crate.display.createItemStack(player)),
                 accent(), UiSize.LARGE) {
-                // Filtro por raridade: um card por raridade, na cor dela, com a chance somada
-                row {
-                    card(t(player, (if (st.filter == null) "<white>▶ " else "<gray>") + tx.filtroTodas), emptyList(), null, accent(),
-                        null, emptyList(), "f:todas") { st.filter = null; st.page = 0 }
-                    for (r in view.rarities) {
-                        card(t(player, (if (st.filter == r) "<white>▶ " else "") + r.colored), emptyList(), null, r.rgb,
-                            Component.literal(RewardInfo.formatChance(view.chanceOf(r))),
-                            listOf(t(player, "<gray>Chance de sair ${r.style.nome}: <white>${RewardInfo.formatChance(view.chanceOf(r))}")),
-                            "f:${r.id}") { st.filter = r; st.page = 0 }
+                collection(ManiaUI.head(player), null, t(player, "<gray>Nenhum prêmio por aqui"), t(player, "<gray>Buscar prêmio")) {
+                    filter("", t(player, tx.filtroTodas))
+                    for (r in view.rarities) filter(r.id, t(player, r.colored + " <gray>" + RewardInfo.formatChance(view.chanceOf(r))))
+                    view.entries.forEachIndexed { i, e ->
+                        val ref = RewardInfo.pokemon(e.reward)
+                        val stack = RewardInfo.icon(player, e.reward)
+                        prize(
+                            "r:$i:${e.reward.id}".take(60), t(player, "<${e.rarity.style.cor}>${Effects.rewardName(e.reward)}"),
+                            t(player, e.rarity.colored), e.rarity.rgb,
+                            if (e.available) UiCollectionState.OWNED else UiCollectionState.LOCKED,
+                            ref?.species, ref?.aspects ?: emptyList(), if (ref == null) stack else null, UiIcon.item(stack),
+                            e.chance?.let { Component.literal(RewardInfo.formatChance(it)) },
+                            listOfNotNull(RewardInfo.highlight(e.reward)?.let { t(player, it) }),
+                            if (!e.available) t(player, tx.esgotado) else null, listOf(e.rarity.id)
+                        )
                     }
-                }
-                val list = view.entries.filter { st.filter == null || it.rarity == st.filter }
-                val pageSize = PER_ROW * ROWS
-                val pages = ((list.size + pageSize - 1) / pageSize).coerceAtLeast(1)
-                st.page = st.page.coerceIn(0, pages - 1)
-                list.drop(st.page * pageSize).take(pageSize).chunked(PER_ROW).forEach { chunk ->
-                    row {
-                        chunk.forEach { e -> rewardCell(player, e.reward, e.rarity, e.chance, 52, e.available) }
-                        repeat(PER_ROW - chunk.size) { spacer(0) }
-                    }
-                }
-                if (pages > 1) text(t(player, "<dark_gray>${st.page + 1}/$pages"), UiAlign.CENTER)
-
-                footer {
                     val near = Actions.nearby(player, crate) != null
                     val multi = Mania.multiOf(crate)
-                    button(Component.literal("◀"), UiStyle.SECONDARY, null, st.page > 0, emptyList(), null, "p:ant") { st.page-- }
                     val openLabel = when {
                         !near -> tx.vaAteACaixa
                         opens <= 0 -> tx.semChaves
                         else -> tx.abrir
                     }
-                    button(t(player, openLabel), UiStyle.SUCCESS, null, near && opens > 0,
-                        if (!near) listOf(t(player, Mania.config.preview.ondeFica)) else emptyList(), null, "abrir") { action ->
+                    action(t(player, openLabel), UiStyle.SUCCESS, near && opens > 0,
+                        if (!near) listOf(t(player, Mania.config.preview.ondeFica)) else emptyList(), "abrir") { action ->
                         Actions.open(action.player, crate, 1)
                     }
                     if (multi > 1) {
                         // Com 2+ aberturas possíveis mostra quantas abre; senão o máximo da caixa (botão desligado)
                         val n = if (opens > 1) minOf(multi, opens) else multi
-                        button(t(player, tx.abrirVarias, mapOf("%amount%" to "$n")), UiStyle.PRIMARY, null,
-                            near && opens > 1, emptyList(), null, "abrir_varias") { action ->
+                        action(t(player, tx.abrirVarias, mapOf("%amount%" to "$n")), UiStyle.PRIMARY, near && opens > 1, emptyList(), "abrir_varias") { action ->
                             Actions.open(action.player, crate, multi)
                         }
                     }
-                    button(t(player, tx.ondeConseguir), UiStyle.SECONDARY, null, true,
-                        (crate.keysInfo ?: Mania.config.preview.ondeConseguir).map { t(player, it) }, null, "onde") { action ->
+                    action(t(player, tx.ondeConseguir), UiStyle.SECONDARY, true,
+                        (crate.keysInfo ?: Mania.config.preview.ondeConseguir).map { t(player, it) }, "onde") { action ->
                         action.close()
                         Actions.keysInfo(action.player, crate)
                     }
-                    button(Component.literal("▶"), UiStyle.SECONDARY, null, st.page < pages - 1, emptyList(), null, "p:prox") { st.page++ }
                 }
             }
         }
@@ -223,22 +216,29 @@ internal object CratesUi {
     object ListMenu : UiMenu {
         override val id = LIST_ID
 
+        /** Todas as caixas na vitrine: a caixa em 3D, as chaves no selo, "Ver prêmios" embaixo da prévia. */
         override fun build(ctx: UiContext): UiScreen {
             val player = ctx.player
             val keys = lists[player.uuid] ?: emptyMap()
             val crates = ConfigManager.CRATES.values.filter { it.enabled }.sortedBy { Mania.crateName(it) }
             return ctx.screen(t(player, "<white>${Mania.config.textos.tituloLista}"), t(player, "<gray>Prêmios e chances de cada caixa"),
                 UiIcon.item(Items.CHEST), accent(), UiSize.LARGE) {
-                grid(4) {
+                collection(ManiaUI.head(player), null, t(player, "<gray>Nenhuma caixa"), t(player, "<gray>Buscar caixa")) {
+                    filter("", t(player, "Todas"))
+                    filter("chave", t(player, "Com chave"))
                     for (crate in crates) {
                         val (have, need) = Actions.keyStatus(crate, keys)
                         val opens = Actions.opensWith(crate, keys)
-                        val lines = mutableListOf<Component>()
-                        if (crate.keys.isNotEmpty()) lines += t(player, "<gray>Chaves: <white>$have" + if (need > 1) " <dark_gray>/$need" else "")
-                        item(t(player, "<white>${Mania.crateName(crate)}"), UiIcon.item(crate.display.createItemStack(player)), lines,
-                            if (opens in 1 until Int.MAX_VALUE) t(player, "<green>x$opens") else null, true,
-                            listOf(t(player, "<yellow>Clique para ver os prêmios e as chances")), null, "c:${crate.id}") { action ->
-                            openPreview(action.player, crate, ListMenu)
+                        val rarity = if (crate.keys.isEmpty()) "<gray>sem chave" else "<gray>Chaves: <white>$have" + if (need > 1) "<dark_gray>/$need" else ""
+                        prize(
+                            "c:${crate.id}".take(60), t(player, "<white>${Mania.crateName(crate)}"), t(player, rarity), accent(),
+                            UiCollectionState.OWNED, stack = crate.display.createItemStack(player),
+                            badge = if (opens in 1 until Int.MAX_VALUE) t(player, "<white>x$opens") else null,
+                            tags = if (opens > 0) listOf("chave") else emptyList()
+                        ) {
+                            button(t(player, "<white>Ver prêmios"), UiStyle.PRIMARY, id = "c:${crate.id}".take(60)) { action ->
+                                openPreview(action.player, crate, ListMenu)
+                            }
                         }
                     }
                 }
