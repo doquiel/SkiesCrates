@@ -1,5 +1,9 @@
 # Changelog (fork da Pokémania)
 
+## 1.2.1-mania (2026-10-13)
+
+- Compila contra a **Cobblemon 1.8.2** (`com.cobblemon:fabric:1.8.2+1.21.1`; antes `1.7.1+1.21.1-SNAPSHOT`). Sem mudança de comportamento.
+
 ## 1.2.0-mania (2026-10-12) · vitrine de loot box
 
 - **Preview da caixa** e **lista de caixas** na vitrine em tela cheia do ManiaUI 0.5.0 (`collection`), no estilo do
