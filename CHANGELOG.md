@@ -1,5 +1,11 @@
 # Changelog (fork da Pokémania)
 
+## 1.2.3-mania (2026-10-18)
+
+- Clique na caixa (abrir e preview) registrado uma vez só, no início do mod, numa fase do evento antes da padrão: mods de
+  proteção (Flan) não cancelam mais o clique antes de ele chegar às caixas. Antes ele era registrado a cada
+  `SERVER_STARTED`/reload, empilhando listeners.
+
 ## 1.2.2-mania (2026-10-17)
 
 - `mania.json` ganha `"blocos"` (padrão `true`). Com `false`, nenhuma caixa carrega bloco no mundo: o servidor só

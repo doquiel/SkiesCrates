@@ -134,6 +134,7 @@ class SkiesCrates : ModInitializer {
         ModIntegration.onInit()
 
         registerEvents()
+        CratesManager.registerEvents()
     }
 
     private fun registerEvents() {

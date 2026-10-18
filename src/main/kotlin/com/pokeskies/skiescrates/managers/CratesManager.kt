@@ -37,6 +37,7 @@ import com.pokeskies.skiescrates.utils.Utils
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import me.lucko.fabric.api.permissions.v0.Permissions
+import net.fabricmc.fabric.api.event.Event
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents
 import net.fabricmc.fabric.api.event.player.AttackBlockCallback
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
@@ -46,6 +47,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.core.component.DataComponentPatch
 import net.minecraft.core.component.DataComponents
 import net.minecraft.nbt.CompoundTag
+import net.minecraft.resources.ResourceLocation
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.InteractionHand
@@ -74,10 +76,12 @@ object CratesManager {
         ConfigManager.CRATES.forEach { (_, crate) ->
             loadCrate(crate)
         }
-
-        registerEvents()
     }
 
+    /**
+     * Uma vez só, no onInitialize: aqui no init() (SERVER_STARTED) os listeners se empilhavam a cada reload e ficavam
+     * depois dos de proteção (Flan), que cancelavam o clique na caixa antes de ele chegar aqui.
+     */
     fun registerEvents() {
         ServerPlayConnectionEvents.JOIN.register(ServerPlayConnectionEvents.Join { handler, _, _ ->
             OpeningManager.getInstance(handler.player.uuid)?.stop()
@@ -96,8 +100,12 @@ object CratesManager {
             }
             return@Before true
         })
+        // Pokémania: os cliques nas caixas rodam numa fase antes da padrão, à frente dos mods de proteção.
+        val antes = ResourceLocation.fromNamespaceAndPath(SkiesCrates.MOD_ID, "antes")
+        AttackBlockCallback.EVENT.addPhaseOrdering(antes, Event.DEFAULT_PHASE)
+        UseBlockCallback.EVENT.addPhaseOrdering(antes, Event.DEFAULT_PHASE)
         // Initially attempting to break a block
-        AttackBlockCallback.EVENT.register(AttackBlockCallback { player, level, _, blockPos, _ ->
+        AttackBlockCallback.EVENT.register(antes, AttackBlockCallback { player, level, _, blockPos, _ ->
             if (player !is ServerPlayer) return@AttackBlockCallback InteractionResult.PASS
 
             val dimensionalPos = DimensionalBlockPos(
@@ -113,7 +121,7 @@ object CratesManager {
             return@AttackBlockCallback InteractionResult.PASS
         })
         // Called when right clicking a block, whether you use an item or not
-        UseBlockCallback.EVENT.register(UseBlockCallback { player, level, hand, blockHitResult ->
+        UseBlockCallback.EVENT.register(antes, UseBlockCallback { player, level, hand, blockHitResult ->
             if (player !is ServerPlayer) return@UseBlockCallback InteractionResult.PASS
             if (hand != InteractionHand.MAIN_HAND) return@UseBlockCallback InteractionResult.PASS
 
