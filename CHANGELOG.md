@@ -1,5 +1,11 @@
 # Changelog (fork da Pokémania)
 
+## 1.2.2-mania (2026-10-17)
+
+- `mania.json` ganha `"blocos"` (padrão `true`). Com `false`, nenhuma caixa carrega bloco no mundo: o servidor só
+  entrega e guarda chaves. Serve para os realms, onde as missões dão chave (`key give`) mas as coordenadas das caixas
+  são do mapa do hub.
+
 ## 1.2.1-mania (2026-10-13)
 
 - Compila contra a **Cobblemon 1.8.2** (`com.cobblemon:fabric:1.8.2+1.21.1`; antes `1.7.1+1.21.1-SNAPSHOT`). Sem mudança de comportamento.

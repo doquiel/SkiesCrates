@@ -17,6 +17,11 @@ import com.google.gson.annotations.SerializedName
 class ManiaConfig(
     /** false desliga tudo da Pokémania: as caixas voltam a funcionar exatamente como no SkiesCrates 1.0.4. */
     val ativo: Boolean = true,
+    /**
+     * false = não carrega nenhum bloco de caixa (as `locations` são ignoradas). Para servidores que só entregam chaves
+     * (`key give` de missões), cujo mapa não é o do hub. Chaves, comandos e menus continuam funcionando.
+     */
+    val blocos: Boolean = true,
     val preview: PreviewOptions = PreviewOptions(),
     val abertura: OpeningOptions = OpeningOptions(),
     /** Raridades, da mais comum para a mais rara. As chaves são fixas; o resto (nome, cor, som...) é livre. */

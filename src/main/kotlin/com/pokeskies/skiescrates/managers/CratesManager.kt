@@ -203,6 +203,8 @@ object CratesManager {
 
     fun loadCrate(crate: Crate) {
         if (!crate.enabled) return
+        // Servidor só de chaves (realms): as coordenadas das caixas são do mapa do hub.
+        if (!Mania.config.blocos) return
         for (blockLocation in crate.block.locations) {
             loadCrateLocation(crate, blockLocation)
         }
